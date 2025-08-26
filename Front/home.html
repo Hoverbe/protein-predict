@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protease Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        accent: '#6366f1',
+                        dark: '#1e293b',
+                        light: '#f8fafc'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass-effect {
+                @apply bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+            .input-focus {
+                @apply focus:ring-2 focus:ring-primary/50 focus:border-primary focus:outline-none;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="font-inter bg-gradient-to-br from-light to-blue-50 min-h-screen flex flex-col">
+    <header class="bg-white shadow-md sticky top-0 z-10 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa fa-flask text-primary text-3xl"></i>
+                <h1 class="text-2xl font-bold text-dark">Protease<span class="text-primary">Predictor</span></h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <a href="#" class="text-dark hover:text-primary transition-colors font-medium">Home</a>
+                <a href="#about" class="text-dark hover:text-primary transition-colors font-medium">About</a>
+                <a href="#contact" class="text-dark hover:text-primary transition-colors font-medium">Contact</a>
+            </nav>
+            <button class="md:hidden text-dark text-2xl">
+                <i class="fa fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-10">
+        <section class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-[clamp(1.8rem,4vw,2.8rem)] font-bold text-dark mb-4">Protein Sequence Analysis</h2>
+                <p class="text-gray-600 text-lg max-w-2xl mx-auto">Predict whether a protein sequence is a protease or not using our advanced machine learning model.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl card-shadow overflow-hidden mb-10 transform transition-all duration-300 hover:scale-[1.01]">
+                <div class="p-6 md:p-8">
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-dark mb-4 flex items-center">
+                            <i class="fa fa-keyboard-o text-primary mr-2"></i> Single Sequence Prediction
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="sequence-input" class="block text-gray-700 font-medium mb-2">Enter Protein Sequence</label>
+                                <textarea
+                                    id="sequence-input"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus transition-all"
+                                    placeholder="Enter amino acid sequence (ACDEFGHIKLMNPQRSTVWY)..."
+                                    rows="4"
+                                ></textarea>
+                                <p class="text-xs text-gray-500 mt-1">Only valid amino acid characters (ACDEFGHIKLMNPQRSTVWY) are allowed.</p>
+                            </div>
+                            <button
+                                id="predict-btn"
+                                class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg transition-all flex items-center justify-center w-full md:w-auto md:mx-0 mx-auto"
+                            >
+                                <i class="fa fa-play-circle mr-2"></i> Predict
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-8 mt-8">
+                        <h3 class="text-xl font-semibold text-dark mb-4 flex items-center">
+                            <i class="fa fa-upload text-secondary mr-2"></i> Batch Prediction via FASTA File
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 transition-all hover:border-primary/50">
+                                <input
+                                    type="file"
+                                    id="fasta-upload"
+                                    accept=".fasta,.fa,.txt"
+                                    class="hidden"
+                                >
+                                <label for="fasta-upload" class="cursor-pointer text-center">
+                                    <i class="fa fa-file-text-o text-4xl text-gray-400 mb-3"></i>
+                                    <p class="text-gray-700 font-medium mb-1">Drag & Drop your FASTA file here</p>
+                                    <p class="text-sm text-gray-500 mb-3">or click to browse</p>
+                                    <span id="file-name" class="text-xs text-gray-500 hidden"></span>
+                                </label>
+                            </div>
+                            <button
+                                id="batch-predict-btn"
+                                class="bg-secondary hover:bg-secondary/90 text-white font-medium px-6 py-3 rounded-lg transition-all flex items-center justify-center w-full md:w-auto md:mx-0 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled
+                            >
+                                <i class="fa fa-cogs mr-2"></i> Process File
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-container" class="hidden bg-white rounded-2xl card-shadow p-6 md:p-8 transition-all duration-300">
+                <h3 class="text-xl font-semibold text-dark mb-6 flex items-center">
+                    <i class="fa fa-bar-chart text-accent mr-2"></i> Prediction Results
+                </h3>
+                <div id="single-result" class="hidden space-y-4"></div>
+                <div id="batch-results" class="hidden space-y-6"></div>
+                <div id="loading" class="hidden flex items-center justify-center py-10">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <span class="ml-3 text-gray-600">Processing...</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">About ProteasePredictor</h4>
+                    <p class="text-gray-300">An advanced tool for predicting protease sequences using state-of-the-art machine learning models based on ESM.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-gray-300">
+                        <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">API Reference</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tutorials</a></li>
+                    </ul>
+                </div>
+                <div id="contact">
+                    <h4 class="text-lg font-semibold mb-4">Contact Us</h4>
+                    <ul class="space-y-2 text-gray-300">
+                        <li class="flex items-center"><i class="fa fa-envelope-o mr-2"></i> support@proteasepredictor.com</li>
+                        <li class="flex items-center"><i class="fa fa-github mr-2"></i> github.com/proteasepredictor</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 ProteasePredictor. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const sequenceInput = document.getElementById('sequence-input');
+        const predictBtn = document.getElementById('predict-btn');
+        const fastaUpload = document.getElementById('fasta-upload');
+        const batchPredictBtn = document.getElementById('batch-predict-btn');
+        const fileName = document.getElementById('file-name');
+        const resultsContainer = document.getElementById('results-container');
+        const singleResult = document.getElementById('single-result');
+        const batchResults = document.getElementById('batch-results');
+        const loading = document.getElementById('loading');
+        const header = document.querySelector('header');
+
+        // Event Listeners
+        predictBtn.addEventListener('click', predictSequence);
+        sequenceInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                predictSequence();
+            }
+        });
+        fastaUpload.addEventListener('change', handleFileUpload);
+        batchPredictBtn.addEventListener('click', processFastaFile);
+        window.addEventListener('scroll', handleScroll);
+
+        // Handle scroll for header effects
+        function handleScroll() {
+            if (window.scrollY > 50) {
+                header.classList.add('py-2');
+                header.classList.remove('py-4');
+            } else {
+                header.classList.add('py-4');
+                header.classList.remove('py-2');
+            }
+        }
+
+        // Predict single sequence
+        function predictSequence() {
+            const sequence = sequenceInput.value.trim();
+            if (!sequence) {
+                showError('Please enter a valid sequence.');
+                return;
+            }
+
+            // Validate sequence
+            const validChars = /^[ACDEFGHIKLMNPQRSTVWY]+$/i;
+            if (!validChars.test(sequence)) {
+                showError('Invalid sequence. Please enter only amino acid characters (ACDEFGHIKLMNPQRSTVWY).');
+                return;
+            }
+
+            // Show loading
+            showLoading();
+
+            // Send request to server
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sequence })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server error: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+                displaySingleResult(data);
+            })
+            .catch(error => {
+                hideLoading();
+                showError('Error during prediction: ' + error.message);
+            });
+        }
+
+        // Handle file upload
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileName.textContent = file.name;
+                fileName.classList.remove('hidden');
+                batchPredictBtn.disabled = false;
+            } else {
+                fileName.textContent = '';
+                fileName.classList.add('hidden');
+                batchPredictBtn.disabled = true;
+            }
+        }
+
+        // Process FASTA file
+        function processFastaFile() {
+            const file = fastaUpload.files[0];
+            if (!file) {
+                showError('Please select a FASTA file first.');
+                return;
+            }
+
+            // Show loading
+            showLoading();
+
+            // Read file and process sequences
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const content = event.target.result;
+                const sequences = parseFasta(content);
+
+                if (sequences.length === 0) {
+                    hideLoading();
+                    showError('No valid sequences found in the FASTA file.');
+                    return;
+                }
+
+                // Process each sequence (in a real app, you might want to use a batch API)
+                const results = [];
+                let completed = 0;
+
+                sequences.forEach((seq, index) => {
+                    fetch('/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ sequence: seq.sequence })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Server error: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        results.push({
+                            id: seq.id,
+                            result: data
+                        });
+                        completed++;
+
+                        if (completed === sequences.length) {
+                            hideLoading();
+                            displayBatchResults(results);
+                        }
+                    })
+                    .catch(error => {
+                        results.push({
+                            id: seq.id,
+                            error: 'Error: ' + error.message
+                        });
+                        completed++;
+
+                        if (completed === sequences.length) {
+                            hideLoading();
+                            displayBatchResults(results);
+                        }
+                    });
+                });
+            };
+
+            reader.onerror = function() {
+                hideLoading();
+                showError('Error reading file.');
+            };
+
+            reader.readAsText(file);
+        }
+
+        // Parse FASTA format
+        function parseFasta(content) {
+            const sequences = [];
+            const lines = content.split('\n');
+            let currentId = null;
+            let currentSequence = '';
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine === '') continue;
+
+                if (trimmedLine.startsWith('>')) {
+                    if (currentId !== null) {
+                        sequences.push({
+                            id: currentId,
+                            sequence: currentSequence
+                        });
+                    }
+                    currentId = trimmedLine.substring(1);
+                    currentSequence = '';
+                } else {
+                    currentSequence += trimmedLine;
+                }
+            }
+
+            if (currentId !== null && currentSequence !== '') {
+                sequences.push({
+                    id: currentId,
+                    sequence: currentSequence
+                });
+            }
+
+            return sequences;
+        }
+
+        // Display single result
+        function displaySingleResult(data) {
+            resultsContainer.classList.remove('hidden');
+            singleResult.classList.remove('hidden');
+            batchResults.classList.add('hidden');
+
+            singleResult.innerHTML = `
+                <div class="p-4 rounded-lg ${data.prediction === 'Protease' ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}">
+                    <div class="flex items-center mb-2">
+                        <h4 class="font-semibold text-lg ${data.prediction === 'Protease' ? 'text-green-700' : 'text-red-700'}">${data.prediction}</h4>
+                        <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full ${data.prediction === 'Protease' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            Confidence: ${(data.probability * 100).toFixed(2)}%
+                        </span>
+                    </div>
+                    <p class="text-gray-600 text-sm">Sequence length: ${data.sequence_length} amino acids</p>
+                </div>
+                <div class="mt-4">
+                    <h4 class="font-medium text-gray-700 mb-2">Prediction Details</h4>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="h-2.5 rounded-full ${data.prediction === 'Protease' ? 'bg-green-500' : 'bg-red-500'}" style="width: ${(data.probability * 100).toFixed(2)}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Not a protease</span>
+                        <span>Protease</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display batch results
+        function displayBatchResults(results) {
+            resultsContainer.classList.remove('hidden');
+            singleResult.classList.add('hidden');
+            batchResults.classList.remove('hidden');
+
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sequence ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prediction</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Length</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+            results.forEach(result => {
+                if (result.error) {
+                    html += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${result.id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">${result.error}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"></td>
+                        </tr>
+                    `;
+                } else {
+                    const data = result.result;
+                    html += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${result.id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${data.prediction === 'Protease' ? 'text-green-600' : 'text-red-600'}">${data.prediction}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                                        <div class="h-2.5 rounded-full ${data.prediction === 'Protease' ? 'bg-green-500' : 'bg-red-500'}" style="width: ${(data.probability * 100).toFixed(2)}%"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">${(data.probability * 100).toFixed(1)}%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${data.sequence_length}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-sm text-gray-500">
+                    Total sequences processed: ${results.length}
+                </div>
+            `;
+
+            batchResults.innerHTML = html;
+        }
+
+        // Show loading
+        function showLoading() {
+            resultsContainer.classList.remove('hidden');
+            singleResult.classList.add('hidden');
+            batchResults.classList.add('hidden');
+            loading.classList.remove('hidden');
+        }
+
+        // Hide loading
+        function hideLoading() {
+            loading.classList.add('hidden');
+        }
+
+        // Show error
+        function showError(message) {
+            resultsContainer.classList.remove('hidden');
+            singleResult.classList.remove('hidden');
+            batchResults.classList.add('hidden');
+            loading.classList.add('hidden');
+
+            singleResult.innerHTML = `
+                <div class="p-4 rounded-lg bg-red-50 border border-red-100">
+                    <div class="flex items-center mb-2">
+                        <i class="fa fa-exclamation-circle text-red-500 mr-2"></i>
+                        <h4 class="font-semibold text-red-700">Error</h4>
+                    </div>
+                    <p class="text-red-600 text-sm">${message}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
