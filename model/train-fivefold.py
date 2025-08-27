@@ -8,6 +8,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import numpy as np
+import esm
 # 加入了学习率退火和耐心值
 # 将项目根目录添加到Python路径
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -30,9 +31,9 @@ sys.path.append(os.path.join(esm_path, 'tokenization'))
 sys.path.append(os.path.join(esm_path, 'utils'))
 sys.path.append(os.path.join(esm_path, 'utils', 'constants'))
 
-from esmc import ESMC
-from sequence_tokenizer import EsmSequenceTokenizer
-from encoding import tokenize_sequence
+# from esmc import ESMC
+# from sequence_tokenizer import EsmSequenceTokenizer
+# from encoding import tokenize_sequence
 
 # 设置随机种子以确保可重复性
 torch.manual_seed(42)
@@ -52,6 +53,7 @@ class ProteinDataset(Dataset):
         sequence = self.sequences[idx]
         label = self.labels[idx]
 
+        from esm.utils.encoding import tokenize_sequence
         # 对序列进行tokenization
         tokens = tokenize_sequence(sequence, self.tokenizer, add_special_tokens=True)
 
@@ -182,6 +184,7 @@ def main():
     test_sequences, test_labels = load_test_data(test_data_path)
     print(f'Test samples: {len(test_sequences)}')
 
+    from esm.tokenization import EsmSequenceTokenizer
     # 加载tokenizer
     tokenizer = EsmSequenceTokenizer()
 
@@ -190,6 +193,7 @@ def main():
     # 直接构建模型并加载本地权重
     from esm.tokenization import get_esmc_model_tokenizers
     tokenizer = get_esmc_model_tokenizers()
+    from esm.models.esmc import ESMC
     esmc_model = ESMC(
         d_model=1152,
         n_heads=18,

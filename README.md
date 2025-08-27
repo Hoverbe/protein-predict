@@ -1,53 +1,111 @@
-# 蛋白质序列二分类任务训练代码
+# ESMC-Protein-Predict
 
-## 项目概述
-本项目使用ESMC预训练模型对蛋白质序列进行二分类任务，区分蛋白酶(标签1)和非蛋白酶(标签0)。
+## 项目介绍
+ESMC-Protein-Predict是一个基于进化尺度模型(ESM)的蛋白质预测工具，使用深度学习方法对蛋白质序列进行分析和预测。该项目包含模型训练、预测功能以及一个友好的Web界面，方便用户进行蛋白质特性预测。
 
-## 文件结构
-- `train.py`: 主训练脚本
-- `best_model.pth`: 训练过程中保存的最佳模型权重(运行后生成)
-- `README.md`: 项目说明文档
+## 项目结构
+```
+├── .idea/              # IDE配置文件
+├── Front/              # 前端Web应用
+│   ├── app.py          # Flask应用入口
+│   ├── home-Chinese.html # 中文主页
+│   ├── home.html       # 英文主页
+│   └── predict_front.py # 预测前端逻辑
+├── data/               # 数据集
+│   └── five-folds-data/ # 五折交叉验证数据
+├── model/              # 模型代码
+│   ├── predict.py      # 预测模块
+│   └── train-fivefold.py # 五折交叉验证训练
+├── requirements.txt    # 项目依赖
+├── save_model/         # 保存的模型
+│   ├── best-model/     # 最佳模型
+│   └── esmc-600m/      # ESMC-600M模型
+└── tools/              # 工具脚本
+```
 
-## 环境要求
-- Python 3.8+
-- PyTorch 2.0+
-- pandas
-- scikit-learn
-- esm (本项目提供的包)
+## 安装指南
+1. 克隆项目到本地
+```bash
+git clone https://github.com/yourusername/esmc-protein-predict.git
+cd esmc-protein-predict
+```
 
-## 数据格式
-训练数据位于`data\balanced_protein_sequences.xlsx`，包含以下列：
-- `id`: 序列标识符(未使用)
-- `seq`: 蛋白质序列
-- `label`: 分类标签(0或1)，1代表是蛋白酶
+2. 创建并激活虚拟环境
+```bash
+# 使用conda
+conda create -n esmc-protein python=3.10
+conda activate esmc-protein
 
-## 模型架构
-- 基础模型：ESMC-600M预训练模型
-- 分类头：两层全连接网络，包含ReLU激活函数和Dropout层
+# 或使用venv
+python -m venv venv
+# Windows
+env\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+```
+
+3. 安装依赖
+```bash
+pip install -r requirements.txt
+```
+
+4. 下载预训练模型
+请确保`save_model/`目录下包含必要的预训练模型文件。
 
 ## 使用方法
-1. 确保已安装所有依赖
-2. 运行训练脚本：
-   ```
-   python AIModel\train.py
-   ```
 
-## 训练过程
-1. 数据加载与预处理：读取Excel文件，分割训练集和测试集
-2. 模型初始化：加载ESMC预训练模型，添加分类头
-3. 模型训练：冻结预训练模型参数，仅训练分类头
-4. 模型评估：在测试集上评估模型性能
-5. 保存最佳模型：根据F1分数保存最佳模型权重
+### 1. 模型训练
+运行五折交叉验证训练脚本：
+```bash
+cd model
+python train-fivefold.py
+```
+训练过程中，模型会自动保存在`save_model/best-model/`目录下。
 
-## 结果评估
-训练过程中会输出以下指标：
-- 损失(Loss)
-- 准确率(Accuracy)
-- 精确率(Precision)
-- 召回率(Recall)
-- F1分数(F1)
+### 2. 启动Web服务
+```bash
+cd Front
+python app.py
+```
+服务启动后，在浏览器中访问 `http://localhost:5000` 即可使用Web界面进行预测。
 
-## 注意事项
-- 默认使用GPU进行训练，如果没有GPU会自动切换到CPU
-- 模型训练完成后，最佳模型会保存在`AIModel\best_model.pth`
-- 可以通过修改`train.py`中的参数来调整训练过程(如学习率、 batch size等)
+### 3. 直接使用预测功能
+可以在Python脚本中导入`predict.py`模块使用预测功能：
+```python
+from model.predict import load_model, predict
+
+# 加载模型
+model, tokenizer = load_model()
+
+# 进行预测
+sequence = "MTEITAAMVKELRESTGAGMMDCKNALSETNGDFDKAVQLLREKGLGKAAKKADRLAAEG"
+result = predict(model, tokenizer, sequence)
+print(result)
+```
+
+## 依赖项
+项目主要依赖以下库：
+- pandas==2.2.2
+- numpy==1.26.4
+- matplotlib==3.8.4
+- seaborn==0.13.2
+- torch==2.3.1
+- scikit-learn==1.4.2
+- tqdm==4.66.4
+- biopython==1.83
+- Flask==2.3.3
+- Flask-CORS==4.0.0
+
+完整依赖列表见 `requirements.txt` 文件。
+
+## 许可证
+本项目采用 [MIT License](https://opensource.org/licenses/MIT) 开源协议。
+
+## 联系方式
+如有问题，请联系项目维护者：[esmc-protein-predict@example.com](mailto:esmc-protein-predict@example.com)
+
+## 许可证
+[MIT License](LICENSE)
+
+## 联系方式
+如有问题，请联系 [your_email@example.com].
