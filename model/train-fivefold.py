@@ -8,7 +8,6 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 import numpy as np
-import esm
 # 加入了学习率退火和耐心值
 # 将项目根目录添加到Python路径
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -31,9 +30,9 @@ sys.path.append(os.path.join(esm_path, 'tokenization'))
 sys.path.append(os.path.join(esm_path, 'utils'))
 sys.path.append(os.path.join(esm_path, 'utils', 'constants'))
 
-# from esmc import ESMC
-# from sequence_tokenizer import EsmSequenceTokenizer
-# from encoding import tokenize_sequence
+from esm.models.esmc import ESMC
+from esm.tokenization.sequence_tokenizer import EsmSequenceTokenizer
+from esm.utils.encoding import tokenize_sequence
 
 # 设置随机种子以确保可重复性
 torch.manual_seed(42)
@@ -53,7 +52,6 @@ class ProteinDataset(Dataset):
         sequence = self.sequences[idx]
         label = self.labels[idx]
 
-        from esm.utils.encoding import tokenize_sequence
         # 对序列进行tokenization
         tokens = tokenize_sequence(sequence, self.tokenizer, add_special_tokens=True)
 
@@ -172,19 +170,19 @@ def evaluate(model, dataloader, criterion, device):
 def main():
     # 设置设备
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cuda:1' if torch.cuda.is_available() and torch.cuda.device_count() > 1 else 'cuda' if torch.cuda.is_available() else 'cpu')
     print(f'Using device: {device}')
 
     # 加载五折数据集
-    data_path = os.path.join(project_root, 'data', 'five-folds-data', 'processed_sequence_dataset_v3_substrate_pocket_aug.csv')
+    data_path = os.path.join(project_root, 'data', 'processed', 'sequence_dataset_train.csv')
     df = load_fold_data(data_path)
     print(f'Total samples in fold dataset: {len(df)}')
 
     # 加载测试集数据
-    test_data_path = os.path.join(project_root, 'data', 'five-folds-data', '11processed_test_set_balanced.csv')
+    test_data_path = os.path.join(project_root, 'data','processed',  'sequence_dataset_test.csv')
     test_sequences, test_labels = load_test_data(test_data_path)
     print(f'Test samples: {len(test_sequences)}')
 
-    from esm.tokenization import EsmSequenceTokenizer
     # 加载tokenizer
     tokenizer = EsmSequenceTokenizer()
 
@@ -193,7 +191,6 @@ def main():
     # 直接构建模型并加载本地权重
     from esm.tokenization import get_esmc_model_tokenizers
     tokenizer = get_esmc_model_tokenizers()
-    from esm.models.esmc import ESMC
     esmc_model = ESMC(
         d_model=1152,
         n_heads=18,
@@ -203,6 +200,7 @@ def main():
     ).to(device)
     # 加载本地模型权重
     model_path = os.path.join(project_root, 'model', 'esmc-600m', 'esmc_600m_2024_12_v0.pth')
+    #model_path = '../../../../esm-main/model/esmc-600m/esmc_600m_2024_12_v0.pth'
     print(f'Loading model from: {model_path}')
     state_dict = torch.load(model_path, map_location=device)
     esmc_model.load_state_dict(state_dict)
@@ -224,8 +222,8 @@ def main():
 
     # 五折交叉验证
     fold_results = []
-    num_epochs = 50
-    patience = 5  # 早停耐心值
+    num_epochs = 16
+    patience = 3  # 早停耐心值
 
     for fold in range(1, 6):
         print(f'\n--- Fold {fold}/5 ---')
@@ -276,7 +274,7 @@ def main():
             # 保存最佳模型（基于验证集AUC）
             if val_auc > best_val_auc:
                 best_val_auc = val_auc
-                fold_model_path = os.path.join(project_root, 'AIModel', f'best_model_fold_{fold}.pth')
+                fold_model_path = os.path.join(project_root, 'save_model', f'best_model_fold_newdata_16ephoc_{fold}.pth')
                 torch.save(model.state_dict(), fold_model_path)
                 print(f'  Saved best model for fold {fold} with AUC: {best_val_auc:.4f} to {fold_model_path}')
                 early_stop_count = 0  # 重置早停计数
@@ -315,7 +313,7 @@ def main():
             # 对每个fold的模型进行预测并平均
             fold_probs = []
             for fold in range(1, 6):
-                fold_model_path = os.path.join(project_root, 'AIModel', f'best_model_fold_{fold}.pth')
+                fold_model_path = os.path.join(project_root, 'save_model', f'best_model_fold_newdata_16ephoc_{fold}.pth')
                 model.load_state_dict(torch.load(fold_model_path, map_location=device))
                 outputs = model(tokens).squeeze()
                 fold_probs.append(outputs.cpu().numpy())
