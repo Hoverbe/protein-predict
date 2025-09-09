@@ -275,7 +275,7 @@ def main():
         optimizer = optim.Adam(model.classifier.parameters(), lr=1e-3)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=3)
 
-        best_val_auc = 0
+        best_val_f1 = 0
         early_stop_count = 0
 
         print(f'Starting training for fold {fold}...')
@@ -302,17 +302,17 @@ def main():
                 f.write(val_metrics + '\n')
 
             # 更新学习率调度器
-            scheduler.step(val_auc)
+            scheduler.step(val_f1)
 
-            # 保存最佳模型（基于验证集AUC）
-            if val_auc > best_val_auc:
-                best_val_auc = val_auc
+            # 保存最佳模型（基于验证集F1分数）
+            if val_f1 > best_val_f1:
+                best_val_f1 = val_f1
                 # 确保模型保存目录存在
                 save_dir = os.path.join(project_root, 'save_model', filename)
                 os.makedirs(save_dir, exist_ok=True)
                 fold_model_path = os.path.join(save_dir, f'best_model_fold_{num_epochs}epoch_{fold}.pth')
                 torch.save(model.state_dict(), fold_model_path)
-                save_msg = f'  Saved best model for fold {fold} with AUC: {best_val_auc:.4f} to {fold_model_path}'
+                save_msg = f'  Saved best model for fold {fold} with F1: {best_val_f1:.4f} to {fold_model_path}'
                 print(save_msg)
                 # 写入日志文件
                 with open(log_file, 'a') as f:
@@ -320,7 +320,7 @@ def main():
                 early_stop_count = 0  # 重置早停计数
             else:
                 early_stop_count += 1
-                no_improve_msg = f'  No improvement in validation AUC for {early_stop_count} epoch(s)'
+                no_improve_msg = f'  No improvement in validation F1 for {early_stop_count} epoch(s)'
                 print(no_improve_msg)
                 # 写入日志文件
                 with open(log_file, 'a') as f:
@@ -328,7 +328,7 @@ def main():
 
             # 早停检查
             if early_stop_count >= patience:
-                early_stop_msg = f'Early stopping after {epoch+1} epochs due to no improvement in validation AUC for {patience} consecutive epochs'
+                early_stop_msg = f'Early stopping after {epoch+1} epochs due to no improvement in validation F1 for {patience} consecutive epochs'
                 print(early_stop_msg)
                 # 写入日志文件
                 with open(log_file, 'a') as f:
@@ -336,20 +336,20 @@ def main():
                 break
 
         # 记录当前fold的最佳验证AUC
-        fold_results.append(best_val_auc)
-        fold_best_msg = f'Fold {fold} best validation AUC: {best_val_auc:.4f}'
+        fold_results.append(best_val_f1)
+        fold_best_msg = f'Fold {fold} best validation F1: {best_val_f1:.4f}'
         print(fold_best_msg)
         # 写入日志文件
         with open(log_file, 'a') as f:
             f.write(fold_best_msg + '\n\n')
 
-    # 计算平均验证AUC
-    avg_val_auc = np.mean(fold_results)
-    avg_auc_msg = f'\nAverage validation AUC across all folds: {avg_val_auc:.4f}'
-    print(avg_auc_msg)
+    # 计算平均验证F1
+    avg_val_f1 = np.mean(fold_results)
+    avg_f1_msg = f'\nAverage validation F1 across all folds: {avg_val_f1:.4f}'
+    print(avg_f1_msg)
     # 写入日志文件
     with open(log_file, 'a') as f:
-        f.write(avg_auc_msg + '\n\n')
+        f.write(avg_f1_msg + '\n\n')
 
     # 加载所有fold的模型并在测试集上进行集成评估
     print('\nLoading best models from all folds for ensemble evaluation on test set...')
