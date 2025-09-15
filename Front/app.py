@@ -92,7 +92,7 @@ def load_model():
     
     # 加载训练好的模型权重
     # model_path = os.path.join(project_root, 'AIModel', 'best_model.pth')
-    model_path = os.path.join(project_root, 'save_model','protein', 'tgm_best_model_fold_newdata_16ephoc_1.pth')
+    model_path = os.path.join(project_root, 'save_model','tgm24', 'best_model_fold_16epoch_5.pth')
     logger.info(f'Loading model from: {model_path}')
     
     try:

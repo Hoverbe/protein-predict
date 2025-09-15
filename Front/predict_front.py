@@ -84,7 +84,7 @@ def load_model():
     
     # 加载训练好的模型权重
     # model_path = os.path.join(project_root, 'AIModel', 'best_model.pth')
-    model_path = r"D:\Project\FinalProject\esmc\save_model\protein\best_model_fold_newdata_16ephoc_1.pth"
+    model_path = r"D:\Project\GithubProject\esmc-protein-predict\save_model\tgm24\best_model_fold_16epoch_5.pth"
     print(f'Loading model from: {model_path}')
     
     try:
