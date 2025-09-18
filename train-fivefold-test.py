@@ -109,7 +109,9 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
         optimizer.zero_grad()
 
         # 前向传播
-        outputs = model(tokens).squeeze()
+        outputs = model(tokens)
+        # 确保输出和标签具有相同的形状，只移除批次维度以外的单维度
+        outputs = outputs.squeeze(dim=1) if outputs.dim() > 1 else outputs
         loss = criterion(outputs, labels)
 
         # 反向传播和优化
@@ -145,7 +147,9 @@ def evaluate(model, dataloader, criterion, device):
             labels = labels.to(device)
 
             # 前向传播
-            outputs = model(tokens).squeeze()
+            outputs = model(tokens)
+            # 确保输出和标签具有相同的形状，只移除批次维度以外的单维度
+            outputs = outputs.squeeze(dim=1) if outputs.dim() > 1 else outputs
             loss = criterion(outputs, labels)
 
             total_loss += loss.item()
@@ -399,7 +403,9 @@ def main():
             labels = labels.to(device)
             
             # 使用最佳模型进行预测
-            outputs = model(tokens).squeeze()
+            outputs = model(tokens)
+            # 确保输出形状正确
+            outputs = outputs.squeeze(dim=1) if outputs.dim() > 1 else outputs
             all_probs.extend(outputs.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
